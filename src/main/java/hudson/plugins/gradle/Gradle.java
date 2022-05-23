@@ -291,6 +291,12 @@ public class Gradle extends Builder {
             env.put("GRADLE_USER_HOME", workspace.getRemote());
         }
 
+        if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
+            FilePath gradleInitScriptFile = BuildScanPublisherUtil.copyInitScriptToWorkspace(workspace);
+            args.add("-I");
+            args.add(gradleInitScriptFile.getRemote());
+        }
+
         if (!launcher.isUnix()) {
             args = args.toWindowsCommand();
         }

@@ -1,5 +1,7 @@
 package hudson.plugins.gradle;
 
+import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -13,8 +15,11 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class WithGradleExecution extends StepExecution {
+
+    private static final Logger LOGGER = Logger.getLogger(WithGradleExecution.class.getName());
 
     public WithGradleExecution(StepContext context, WithGradle withGradle) {
         super(context);
@@ -38,6 +43,21 @@ public class WithGradleExecution extends StepExecution {
         public BuildScanCallback(GradleTaskListenerDecorator decorator, StepContext parentContext) {
             this.decorator = decorator;
             this.parentContext = parentContext;
+        }
+
+        @Override
+        public void onStart(StepContext context) {
+            try {
+                EnvVars env = context.get(EnvVars.class);
+                FilePath workspace = context.get(FilePath.class);
+                PrintStream logger = context.get(TaskListener.class).getLogger();
+
+                if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
+                    BuildScanPublisherUtil.copyInitScriptToUserHome(workspace, logger);
+                }
+            } catch (IOException | InterruptedException e) {
+                LOGGER.warning("error - build scan publication can't be forced");
+            }
         }
 
         @Override
