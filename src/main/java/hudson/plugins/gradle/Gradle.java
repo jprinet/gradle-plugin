@@ -8,12 +8,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
-import hudson.model.Node;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tools.ToolInstallation;
@@ -25,6 +20,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -292,7 +288,7 @@ public class Gradle extends Builder {
         }
 
         if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
-            FilePath gradleInitScriptFile = BuildScanPublisherUtil.copyInitScriptToWorkspace(workspace);
+            FilePath gradleInitScriptFile = BuildScanPublisherUtil.copyInitScriptToWorkspace(workspace, gradleLogger);
             args.add("-I");
             args.add(gradleInitScriptFile.getRemote());
         }

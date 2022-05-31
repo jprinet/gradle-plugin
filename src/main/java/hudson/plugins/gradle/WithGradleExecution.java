@@ -53,7 +53,7 @@ public class WithGradleExecution extends StepExecution {
                 PrintStream logger = context.get(TaskListener.class).getLogger();
 
                 if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
-                    BuildScanPublisherUtil.copyInitScriptToUserHome(workspace, logger);
+                    BuildScanPublisherUtil.copyInitScriptToUserHome(workspace.getChannel(), env.get("HOME"), logger);
                 }
             } catch (IOException | InterruptedException e) {
                 LOGGER.warning("error - build scan publication can't be forced");
