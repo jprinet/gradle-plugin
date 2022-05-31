@@ -50,19 +50,34 @@ public class WithGradleExecution extends StepExecution {
             try {
                 EnvVars env = context.get(EnvVars.class);
                 FilePath workspace = context.get(FilePath.class);
-                PrintStream logger = context.get(TaskListener.class).getLogger();
 
                 if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
-                    BuildScanPublisherUtil.copyInitScriptToUserHome(workspace.getChannel(), env.get("HOME"), logger);
+                    String destination = BuildScanPublisherUtil.getHomeDestination(env);
+                    BuildScanPublisherUtil.copyInitScriptToDestination(workspace.getChannel(), destination);
                 }
-            } catch (IOException | InterruptedException e) {
-                LOGGER.warning("error - build scan publication can't be forced");
+            } catch (IllegalStateException | IOException | InterruptedException e) {
+                LOGGER.warning("Unable to configure forced build scan: " + e.getMessage());
             }
         }
 
         @Override
         public void onSuccess(StepContext context, Object result) {
             parentContext.onSuccess(extractBuildScans(context));
+            removeInitScriptIfNeeded(context);
+        }
+
+        private void removeInitScriptIfNeeded(StepContext context) {
+            try {
+                EnvVars env = context.get(EnvVars.class);
+                FilePath workspace = context.get(FilePath.class);
+
+                if(env != null && workspace != null) {
+                    String destination = BuildScanPublisherUtil.getHomeDestination(env);
+                    BuildScanPublisherUtil.removeInitScript(workspace.getChannel(), destination, env);
+                }
+            } catch (IllegalStateException | IOException | InterruptedException e) {
+                LOGGER.warning("Unable to remove forced build scan configuration: " + e.getMessage());
+            }
         }
 
         private List<String> extractBuildScans(StepContext context) {
@@ -106,6 +121,7 @@ public class WithGradleExecution extends StepExecution {
         public void onFailure(StepContext context, Throwable t) {
             parentContext.onFailure(t);
             extractBuildScans(context);
+            removeInitScriptIfNeeded(context);
         }
     }
 }

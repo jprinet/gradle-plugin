@@ -20,7 +20,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -288,9 +287,14 @@ public class Gradle extends Builder {
         }
 
         if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
-            FilePath gradleInitScriptFile = BuildScanPublisherUtil.copyInitScriptToWorkspace(workspace, gradleLogger);
-            args.add("-I");
-            args.add(gradleInitScriptFile.getRemote());
+            try {
+                String destination = BuildScanPublisherUtil.getWorkspaceDestination(workspace);
+                FilePath gradleInitScriptFile = BuildScanPublisherUtil.copyInitScriptToDestination(workspace.getChannel(), destination);
+                args.add("-I");
+                args.add(gradleInitScriptFile.getRemote());
+            } catch (IllegalStateException e) {
+                gradleLogger.info("Unable to configure forced build scan: " + e.getMessage());
+            }
         }
 
         if (!launcher.isUnix()) {
