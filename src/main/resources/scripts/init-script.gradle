@@ -84,7 +84,6 @@ if (GradleVersion.current() < GradleVersion.version('6.0')) {
           logger.quiet("Applying $BUILD_SCAN_PLUGIN_CLASS via init script")
           pluginManager.apply(initscript.classLoader.loadClass(BUILD_SCAN_PLUGIN_CLASS))
           buildScan.publishAlways()
-          buildScan.setUploadInBackground(false)
           buildScan.server = geUrl
         }
       }
@@ -112,7 +111,6 @@ if (GradleVersion.current() < GradleVersion.version('6.0')) {
         settings.pluginManager.apply(initscript.classLoader.loadClass(GRADLE_ENTERPRISE_PLUGIN_CLASS))
         extensionsWithPublicType(settings, GRADLE_ENTERPRISE_EXTENSION_CLASS).collect { settings[it.name] }.each { ext ->
           ext.buildScan.publishAlways()
-          ext.buildScan.setUploadInBackground(false)
           ext.server = geUrl
         }
       }
