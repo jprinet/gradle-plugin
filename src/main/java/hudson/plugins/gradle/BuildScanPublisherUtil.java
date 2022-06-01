@@ -31,7 +31,7 @@ public class BuildScanPublisherUtil {
     public static String getHomeDestination(EnvVars env){
         String homeOverride = env.get(BUILD_SCAN_OVERRIDE_HOME);
         if(homeOverride != null){
-            return homeOverride;
+            return homeOverride + "/" + GRADLE_DIR + "/" + INIT_DIR;
         } else {
             return env.get("HOME") + "/" + GRADLE_DIR + "/" + INIT_DIR;
         }
