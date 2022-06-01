@@ -6,6 +6,7 @@ import hudson.remoting.VirtualChannel;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BuildScanPublisherUtil {
 
@@ -16,6 +17,8 @@ public class BuildScanPublisherUtil {
     private static final String INIT_DIR = "init.d";
     private static final String GRADLE_DIR = ".gradle";
     private static final String GRADLE_INIT_FILE = "init-build-scan.gradle";
+
+    private static final ReentrantLock lock = new ReentrantLock();
 
     public static boolean isForcePublishBuildScan(EnvVars env, FilePath workspace) {
         return env != null && workspace != null && env.containsKey(BUILD_SCAN_PLUGIN_GE_PLUGIN_VERSION);
@@ -38,16 +41,23 @@ public class BuildScanPublisherUtil {
         try {
             assertDestinationNotNull(destination);
             FilePath gradleInitScriptFile = new FilePath(channel, destination + "/" + GRADLE_INIT_FILE);
+
             if (!gradleInitScriptFile.exists()) {
+                lock.lock();
+                try {
+                    if (!gradleInitScriptFile.exists()) {
+                        FilePath gradleInitScriptDirectory = new FilePath(channel, destination);
+                        if (!gradleInitScriptDirectory.exists()) {
+                            gradleInitScriptDirectory.mkdirs();
+                        }
 
-                FilePath gradleInitScriptDirectory = new FilePath(channel, destination);
-                if (!gradleInitScriptDirectory.exists()) {
-                    gradleInitScriptDirectory.mkdirs();
+                        gradleInitScriptFile.copyFrom(
+                            Objects.requireNonNull(BuildScanPublisherUtil.class.getClassLoader().getResourceAsStream(RESOURCE_INIT_SCRIPT_GRADLE))
+                        );
+                    }
+                } finally {
+                    lock.unlock();
                 }
-
-                gradleInitScriptFile.copyFrom(
-                    Objects.requireNonNull(BuildScanPublisherUtil.class.getClassLoader().getResourceAsStream(RESOURCE_INIT_SCRIPT_GRADLE))
-                );
             }
 
             return gradleInitScriptFile;
