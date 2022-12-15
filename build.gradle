@@ -96,6 +96,8 @@ dependencies {
       exclude group: 'commons-logging', module: 'commons-logging'
   }
 
+  implementation("com.fasterxml.jackson.core:jackson-databind:2.12.4")
+
   includedLibs "com.gradle:gradle-enterprise-maven-extension:${gradle.gradleEnterpriseMavenExtensionVersion}"
   includedLibs "com.gradle:common-custom-user-data-maven-extension:${gradle.commonCustomUserDataMavenExtensionVersion}"
   includedLibs project(path: ':configuration-maven-extension', configuration: 'mvnExtension')
