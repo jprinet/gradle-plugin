@@ -1,5 +1,7 @@
 package hudson.plugins.gradle;
 
+import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -13,8 +15,11 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class WithGradleExecution extends StepExecution {
+
+    private static final Logger LOGGER = Logger.getLogger(WithGradleExecution.class.getName());
 
     public WithGradleExecution(StepContext context, WithGradle withGradle) {
         super(context);
@@ -41,8 +46,38 @@ public class WithGradleExecution extends StepExecution {
         }
 
         @Override
+        public void onStart(StepContext context) {
+            try {
+                EnvVars env = context.get(EnvVars.class);
+                FilePath workspace = context.get(FilePath.class);
+
+                if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
+                    String destination = BuildScanPublisherUtil.getHomeDestination(env);
+                    BuildScanPublisherUtil.copyInitScriptToDestination(workspace.getChannel(), destination);
+                }
+            } catch (IllegalStateException | IOException | InterruptedException e) {
+                LOGGER.warning("Unable to configure forced build scan: " + e.getMessage());
+            }
+        }
+
+        @Override
         public void onSuccess(StepContext context, Object result) {
             parentContext.onSuccess(extractBuildScans(context));
+            removeInitScriptIfNeeded(context);
+        }
+
+        private void removeInitScriptIfNeeded(StepContext context) {
+            try {
+                EnvVars env = context.get(EnvVars.class);
+                FilePath workspace = context.get(FilePath.class);
+
+                if(env != null && workspace != null) {
+                    String destination = BuildScanPublisherUtil.getHomeDestination(env);
+                    BuildScanPublisherUtil.removeInitScript(workspace.getChannel(), destination, env);
+                }
+            } catch (IllegalStateException | IOException | InterruptedException e) {
+                LOGGER.warning("Unable to remove forced build scan configuration: " + e.getMessage());
+            }
         }
 
         private List<String> extractBuildScans(StepContext context) {
@@ -86,6 +121,7 @@ public class WithGradleExecution extends StepExecution {
         public void onFailure(StepContext context, Throwable t) {
             parentContext.onFailure(t);
             extractBuildScans(context);
+            removeInitScriptIfNeeded(context);
         }
     }
 }

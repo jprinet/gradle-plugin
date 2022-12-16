@@ -6,12 +6,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
-import hudson.model.Node;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tools.ToolInstallation;
@@ -290,6 +285,17 @@ public class Gradle extends Builder {
         if (useWorkspaceAsHome && workspace != null) {
             // Make user home relative to the workspace, so that files aren't shared between builds
             env.put("GRADLE_USER_HOME", workspace.getRemote());
+        }
+
+        if(BuildScanPublisherUtil.isForcePublishBuildScan(env, workspace)) {
+            try {
+                String destination = BuildScanPublisherUtil.getWorkspaceDestination(workspace);
+                FilePath gradleInitScriptFile = BuildScanPublisherUtil.copyInitScriptToDestination(workspace.getChannel(), destination);
+                args.add("-I");
+                args.add(gradleInitScriptFile.getRemote());
+            } catch (IllegalStateException e) {
+                gradleLogger.info("Unable to configure forced build scan: " + e.getMessage());
+            }
         }
 
         if (!launcher.isUnix()) {
